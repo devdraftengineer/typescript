@@ -1,11 +1,11 @@
 {
   "name": "@devdraft/sdk",
   "version": "1.0.0",
-  "description": "OpenAPI client for @devdraft/sdk",
-  "author": "OpenAPI-Generator",
+  "description": "Devdraft SDK for @devdraft/sdk",
+  "author": "Devdraft",
   "repository": {
     "type": "git",
-    "url": "https://github.com/GIT_USER_ID/GIT_REPO_ID.git"
+    "url": "https://github.com/devdraftengineer/typescript.git"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
