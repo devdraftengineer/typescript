@@ -43,6 +43,46 @@ example().catch(console.error);
 ```
 
 
+
+## Examples
+
+This SDK includes comprehensive examples demonstrating common use cases. Each example includes simple usage, advanced workflows, and error handling scenarios.
+
+### Quick Start Example
+
+```typescript
+import { Configuration, APIHealthApi } from '@devdraft/sdk';
+
+const config = new Configuration({
+  basePath: 'https://api.devdraft.ai',
+  apiKey: (key) => {
+    if (key === 'x-client-key') return process.env.CLIENT_KEY || 'your-client-key';
+    if (key === 'x-client-secret') return process.env.CLIENT_SECRET || 'your-client-secret';
+    return '';
+  }
+});
+
+const api = new APIHealthApi(config);
+const response = await api.healthControllerPublicHealthCheckV0();
+console.log('Service status:', response.status);
+```
+
+### Available Example Files
+
+- [Health Examples](./examples/health-check.ts)
+- [Payments Examples](./examples/payments.ts)
+- [Customers Examples](./examples/customers.ts)
+- [Invoices Examples](./examples/invoices.ts)
+- [Webhooks Examples](./examples/webhooks.ts)
+
+### Example Structure
+
+Each example file contains:
+- **Simple Examples**: Basic usage with minimal code
+- **Advanced Examples**: Complex workflows and best practices  
+- **Error Scenarios**: How to handle errors and edge cases
+
+For detailed examples, see the [examples directory](./examples/README.md).
 ## Documentation
 
 ### API Endpoints
