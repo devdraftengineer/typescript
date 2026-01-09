@@ -79,7 +79,13 @@ describe('resource customers', () => {
     // ensure the request options are being passed correctly by passing an invalid HTTP method in order to cause an error
     await expect(
       client.v0.customers.list(
-        { email: 'john.doe@example.com', name: 'John', skip: 0, status: 'ACTIVE', take: 10 },
+        {
+          email: 'john.doe@example.com',
+          name: 'John',
+          skip: 0,
+          status: 'ACTIVE',
+          take: 10,
+        },
         { path: '/_stainless_unknown_path' },
       ),
     ).rejects.toThrow(Devdraft.NotFoundError);

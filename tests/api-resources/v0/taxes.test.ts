@@ -74,7 +74,12 @@ describe('resource taxes', () => {
     // ensure the request options are being passed correctly by passing an invalid HTTP method in order to cause an error
     await expect(
       client.v0.taxes.list(
-        { active: true, name: 'Sales', skip: 0, take: 10 },
+        {
+          active: true,
+          name: 'Sales',
+          skip: 0,
+          take: 10,
+        },
         { path: '/_stainless_unknown_path' },
       ),
     ).rejects.toThrow(Devdraft.NotFoundError);
