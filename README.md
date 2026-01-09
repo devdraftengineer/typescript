@@ -1,262 +1,354 @@
-# @devdraft/sdk@1.0.0
+# Devdraft TypeScript API Library
 
-A TypeScript SDK client for the api.devdraft.ai API.
+[![NPM version](<https://img.shields.io/npm/v/devdraft.svg?label=npm%20(stable)>)](https://npmjs.org/package/devdraft) ![npm bundle size](https://img.shields.io/bundlephobia/minzip/devdraft)
+
+This library provides convenient access to the Devdraft REST API from server-side TypeScript or JavaScript.
+
+The full API of this library can be found in [api.md](api.md).
+
+It is generated with [Stainless](https://www.stainless.com/).
+
+## Installation
+
+```sh
+npm install devdraft
+```
 
 ## Usage
 
-First, install the SDK from npm.
+The full API of this library can be found in [api.md](api.md).
 
-```bash
-npm install @devdraft/sdk --save
+<!-- prettier-ignore -->
+```js
+import Devdraft from 'devdraft';
+
+const client = new Devdraft();
+
+const response = await client.v0.health.check();
+
+console.log(response.authenticated);
 ```
 
-Next, try it out.
+### Request & Response types
 
+This library includes TypeScript definitions for all request params and response fields. You may import and use them like so:
 
+<!-- prettier-ignore -->
 ```ts
-import {
-  Configuration,
-  APIHealthApi,
-} from '@devdraft/sdk';
-import type { HealthControllerCheckV0Request } from '@devdraft/sdk';
+import Devdraft from 'devdraft';
 
-async function example() {
-  console.log("🚀 Testing @devdraft/sdk SDK...");
-  const config = new Configuration({ 
-    // To configure API key authorization: x-client-secret
-    apiKey: "YOUR API KEY",
-    // To configure API key authorization: x-client-key
-    apiKey: "YOUR API KEY",
-  });
-  const api = new APIHealthApi(config);
+const client = new Devdraft();
 
-  try {
-    const data = await api.healthControllerCheckV0();
-    console.log(data);
-  } catch (error) {
-    console.error(error);
-  }
-}
-
-// Run the test
-example().catch(console.error);
+const response: Devdraft.V0.HealthCheckResponse = await client.v0.health.check();
 ```
 
+Documentation for each method, request param, and response field are available in docstrings and will appear on hover in most modern editors.
 
+## Handling errors
 
-## Examples
+When the library is unable to connect to the API,
+or if the API returns a non-success status code (i.e., 4xx or 5xx response),
+a subclass of `APIError` will be thrown:
 
-This SDK includes comprehensive examples demonstrating common use cases. Each example includes simple usage, advanced workflows, and error handling scenarios.
-
-### Quick Start Example
-
-```typescript
-import { Configuration, APIHealthApi } from '@devdraft/sdk';
-
-const config = new Configuration({
-  basePath: 'https://api.devdraft.ai',
-  apiKey: (key) => {
-    if (key === 'x-client-key') return process.env.CLIENT_KEY || 'your-client-key';
-    if (key === 'x-client-secret') return process.env.CLIENT_SECRET || 'your-client-secret';
-    return '';
+<!-- prettier-ignore -->
+```ts
+const response = await client.v0.health.check().catch(async (err) => {
+  if (err instanceof Devdraft.APIError) {
+    console.log(err.status); // 400
+    console.log(err.name); // BadRequestError
+    console.log(err.headers); // {server: 'nginx', ...}
+  } else {
+    throw err;
   }
 });
-
-const api = new APIHealthApi(config);
-const response = await api.healthControllerPublicHealthCheckV0();
-console.log('Service status:', response.status);
 ```
 
-### Available Example Files
+Error codes are as follows:
 
-- [Health Examples](./examples/health-check.ts)
-- [Payments Examples](./examples/payments.ts)
-- [Customers Examples](./examples/customers.ts)
-- [Invoices Examples](./examples/invoices.ts)
-- [Webhooks Examples](./examples/webhooks.ts)
+| Status Code | Error Type                 |
+| ----------- | -------------------------- |
+| 400         | `BadRequestError`          |
+| 401         | `AuthenticationError`      |
+| 403         | `PermissionDeniedError`    |
+| 404         | `NotFoundError`            |
+| 422         | `UnprocessableEntityError` |
+| 429         | `RateLimitError`           |
+| >=500       | `InternalServerError`      |
+| N/A         | `APIConnectionError`       |
 
-### Example Structure
+### Retries
 
-Each example file contains:
-- **Simple Examples**: Basic usage with minimal code
-- **Advanced Examples**: Complex workflows and best practices  
-- **Error Scenarios**: How to handle errors and edge cases
+Certain errors will be automatically retried 2 times by default, with a short exponential backoff.
+Connection errors (for example, due to a network connectivity problem), 408 Request Timeout, 409 Conflict,
+429 Rate Limit, and >=500 Internal errors will all be retried by default.
 
-For detailed examples, see the [examples directory](./examples/README.md).
-## Documentation
+You can use the `maxRetries` option to configure or disable this:
 
-### API Endpoints
+<!-- prettier-ignore -->
+```js
+// Configure the default for all requests:
+const client = new Devdraft({
+  maxRetries: 0, // default is 2
+});
 
-All URIs are relative to *https://api.devdraft.ai*
-
-| Class | Method | HTTP request | Description
-| ----- | ------ | ------------ | -------------
-*APIHealthApi* | [**healthControllerCheckV0**](docs/APIHealthApi.md#healthcontrollercheckv0) | **GET** /api/v0/health | Authenticated health check endpoint
-*APIHealthApi* | [**healthControllerPublicHealthCheckV0**](docs/APIHealthApi.md#healthcontrollerpublichealthcheckv0) | **GET** /api/v0/health/public | Public health check endpoint
-*AppBalancesApi* | [**balanceControllerGetAllBalances**](docs/AppBalancesApi.md#balancecontrollergetallbalances) | **GET** /api/v0/balance | Get all stablecoin balances for an app
-*AppBalancesApi* | [**balanceControllerGetEURCBalance**](docs/AppBalancesApi.md#balancecontrollergeteurcbalance) | **GET** /api/v0/balance/eurc | Get EURC balance for an app
-*AppBalancesApi* | [**balanceControllerGetUSDCBalance**](docs/AppBalancesApi.md#balancecontrollergetusdcbalance) | **GET** /api/v0/balance/usdc | Get USDC balance for an app
-*CustomersApi* | [**customerControllerCreate**](docs/CustomersApi.md#customercontrollercreate) | **POST** /api/v0/customers | Create a new customer
-*CustomersApi* | [**customerControllerFindAll**](docs/CustomersApi.md#customercontrollerfindall) | **GET** /api/v0/customers | Get all customers with filters
-*CustomersApi* | [**customerControllerFindOne**](docs/CustomersApi.md#customercontrollerfindone) | **GET** /api/v0/customers/{id} | Get a customer by ID
-*CustomersApi* | [**customerControllerUpdate**](docs/CustomersApi.md#customercontrollerupdate) | **PATCH** /api/v0/customers/{id} | Update a customer
-*ExchangeRatesApi* | [**exchangeRateControllerGetEURToUSDRate**](docs/ExchangeRatesApi.md#exchangeratecontrollergeteurtousdrate) | **GET** /api/v0/exchange-rate/eur-to-usd | Get EUR to USD exchange rate
-*ExchangeRatesApi* | [**exchangeRateControllerGetExchangeRate**](docs/ExchangeRatesApi.md#exchangeratecontrollergetexchangerate) | **GET** /api/v0/exchange-rate | Get exchange rate between specified currencies
-*ExchangeRatesApi* | [**exchangeRateControllerGetUSDToEURRate**](docs/ExchangeRatesApi.md#exchangeratecontrollergetusdtoeurrate) | **GET** /api/v0/exchange-rate/usd-to-eur | Get USD to EUR exchange rate
-*InvoicesApi* | [**invoiceControllerCreate**](docs/InvoicesApi.md#invoicecontrollercreate) | **POST** /api/v0/invoices | Create a new invoice
-*InvoicesApi* | [**invoiceControllerFindAll**](docs/InvoicesApi.md#invoicecontrollerfindall) | **GET** /api/v0/invoices | Get all invoices
-*InvoicesApi* | [**invoiceControllerFindOne**](docs/InvoicesApi.md#invoicecontrollerfindone) | **GET** /api/v0/invoices/{id} | Get an invoice by ID
-*InvoicesApi* | [**invoiceControllerUpdate**](docs/InvoicesApi.md#invoicecontrollerupdate) | **PUT** /api/v0/invoices/{id} | Update an invoice
-*LiquidationAddressesApi* | [**liquidationAddressControllerCreateLiquidationAddress**](docs/LiquidationAddressesApi.md#liquidationaddresscontrollercreateliquidationaddress) | **POST** /api/v0/customers/{customerId}/liquidation_addresses | Create a new liquidation address for a customer
-*LiquidationAddressesApi* | [**liquidationAddressControllerGetLiquidationAddress**](docs/LiquidationAddressesApi.md#liquidationaddresscontrollergetliquidationaddress) | **GET** /api/v0/customers/{customerId}/liquidation_addresses/{liquidationAddressId} | Get a specific liquidation address
-*LiquidationAddressesApi* | [**liquidationAddressControllerGetLiquidationAddresses**](docs/LiquidationAddressesApi.md#liquidationaddresscontrollergetliquidationaddresses) | **GET** /api/v0/customers/{customerId}/liquidation_addresses | Get all liquidation addresses for a customer
-*PaymentIntentsApi* | [**paymentIntentControllerCreateBankPaymentIntent**](docs/PaymentIntentsApi.md#paymentintentcontrollercreatebankpaymentintent) | **POST** /api/v0/payment-intents/bank | Create a bank payment intent
-*PaymentIntentsApi* | [**paymentIntentControllerCreateStablePaymentIntent**](docs/PaymentIntentsApi.md#paymentintentcontrollercreatestablepaymentintent) | **POST** /api/v0/payment-intents/stablecoin | Create a stable payment intent
-*PaymentLinksApi* | [**paymentLinksControllerCreate**](docs/PaymentLinksApi.md#paymentlinkscontrollercreate) | **POST** /api/v0/payment-links | Create a new payment link
-*PaymentLinksApi* | [**paymentLinksControllerFindAll**](docs/PaymentLinksApi.md#paymentlinkscontrollerfindall) | **GET** /api/v0/payment-links | Get all payment links
-*PaymentLinksApi* | [**paymentLinksControllerFindOne**](docs/PaymentLinksApi.md#paymentlinkscontrollerfindone) | **GET** /api/v0/payment-links/{id} | Get a payment link by ID
-*PaymentLinksApi* | [**paymentLinksControllerUpdate**](docs/PaymentLinksApi.md#paymentlinkscontrollerupdate) | **PUT** /api/v0/payment-links/{id} | Update a payment link
-*ProductsApi* | [**productControllerCreate**](docs/ProductsApi.md#productcontrollercreate) | **POST** /api/v0/products | Create a new product
-*ProductsApi* | [**productControllerFindAll**](docs/ProductsApi.md#productcontrollerfindall) | **GET** /api/v0/products | Get all products
-*ProductsApi* | [**productControllerFindOne**](docs/ProductsApi.md#productcontrollerfindone) | **GET** /api/v0/products/{id} | Get a product by ID
-*ProductsApi* | [**productControllerRemove**](docs/ProductsApi.md#productcontrollerremove) | **DELETE** /api/v0/products/{id} | Delete a product
-*ProductsApi* | [**productControllerUpdate**](docs/ProductsApi.md#productcontrollerupdate) | **PUT** /api/v0/products/{id} | Update a product
-*ProductsApi* | [**productControllerUploadImage**](docs/ProductsApi.md#productcontrolleruploadimage) | **POST** /api/v0/products/{id}/images | Upload images for a product
-*TaxesApi* | [**taxControllerCreate**](docs/TaxesApi.md#taxcontrollercreate) | **POST** /api/v0/taxes | Create a new tax
-*TaxesApi* | [**taxControllerDeleteWithoutId**](docs/TaxesApi.md#taxcontrollerdeletewithoutid) | **DELETE** /api/v0/taxes | Tax ID required for deletion
-*TaxesApi* | [**taxControllerFindAll**](docs/TaxesApi.md#taxcontrollerfindall) | **GET** /api/v0/taxes | Get all taxes with filters
-*TaxesApi* | [**taxControllerFindOne**](docs/TaxesApi.md#taxcontrollerfindone) | **GET** /api/v0/taxes/{id} | Get a tax by ID
-*TaxesApi* | [**taxControllerRemove**](docs/TaxesApi.md#taxcontrollerremove) | **DELETE** /api/v0/taxes/{id} | Delete a tax
-*TaxesApi* | [**taxControllerUpdate**](docs/TaxesApi.md#taxcontrollerupdate) | **PUT** /api/v0/taxes/{id} | Update a tax
-*TaxesApi* | [**taxControllerUpdateWithoutId**](docs/TaxesApi.md#taxcontrollerupdatewithoutid) | **PUT** /api/v0/taxes | Tax ID required for updates
-*TestPaymentsApi* | [**testPaymentControllerCreatePaymentV0**](docs/TestPaymentsApi.md#testpaymentcontrollercreatepaymentv0) | **POST** /api/v0/test-payment | Process a test payment
-*TestPaymentsApi* | [**testPaymentControllerGetPaymentV0**](docs/TestPaymentsApi.md#testpaymentcontrollergetpaymentv0) | **GET** /api/v0/test-payment/{id} | Get payment details by ID
-*TestPaymentsApi* | [**testPaymentControllerRefundPaymentV0**](docs/TestPaymentsApi.md#testpaymentcontrollerrefundpaymentv0) | **POST** /api/v0/test-payment/{id}/refund | Refund a payment
-*TransfersApi* | [**transferControllerCreateDirectBankTransfer**](docs/TransfersApi.md#transfercontrollercreatedirectbanktransfer) | **POST** /api/v0/transfers/direct-bank | Create a direct bank transfer
-*TransfersApi* | [**transferControllerCreateDirectWalletTransfer**](docs/TransfersApi.md#transfercontrollercreatedirectwallettransfer) | **POST** /api/v0/transfers/direct-wallet | Create a direct wallet transfer
-*TransfersApi* | [**transferControllerCreateExternalBankTransfer**](docs/TransfersApi.md#transfercontrollercreateexternalbanktransfer) | **POST** /api/v0/transfers/external-bank-transfer | Create an external bank transfer
-*TransfersApi* | [**transferControllerCreateExternalStablecoinTransfer**](docs/TransfersApi.md#transfercontrollercreateexternalstablecointransfer) | **POST** /api/v0/transfers/external-stablecoin-transfer | Create an external stablecoin transfer
-*TransfersApi* | [**transferControllerCreateStablecoinConversion**](docs/TransfersApi.md#transfercontrollercreatestablecoinconversion) | **POST** /api/v0/transfers/stablecoin-conversion | Create a stablecoin conversion
-*WalletsApi* | [**walletControllerGetWallets**](docs/WalletsApi.md#walletcontrollergetwallets) | **GET** /api/v0/wallets | Get wallets for an app
-*WebhooksApi* | [**webhookControllerCreate**](docs/WebhooksApi.md#webhookcontrollercreate) | **POST** /api/v0/webhooks | Create a new webhook
-*WebhooksApi* | [**webhookControllerFindAll**](docs/WebhooksApi.md#webhookcontrollerfindall) | **GET** /api/v0/webhooks | Get all webhooks
-*WebhooksApi* | [**webhookControllerFindOne**](docs/WebhooksApi.md#webhookcontrollerfindone) | **GET** /api/v0/webhooks/{id} | Get a webhook by id
-*WebhooksApi* | [**webhookControllerRemove**](docs/WebhooksApi.md#webhookcontrollerremove) | **DELETE** /api/v0/webhooks/{id} | Delete a webhook
-*WebhooksApi* | [**webhookControllerUpdate**](docs/WebhooksApi.md#webhookcontrollerupdate) | **PATCH** /api/v0/webhooks/{id} | Update a webhook
-
-
-### Models
-
-- [AggregatedBalanceResponse](docs/AggregatedBalanceResponse.md)
-- [AllBalancesResponse](docs/AllBalancesResponse.md)
-- [BridgeFiatPaymentRail](docs/BridgeFiatPaymentRail.md)
-- [BridgePaymentRail](docs/BridgePaymentRail.md)
-- [CreateBankPaymentIntentDto](docs/CreateBankPaymentIntentDto.md)
-- [CreateCustomerDto](docs/CreateCustomerDto.md)
-- [CreateDirectBankTransferDto](docs/CreateDirectBankTransferDto.md)
-- [CreateDirectWalletTransferDto](docs/CreateDirectWalletTransferDto.md)
-- [CreateExternalBankTransferDto](docs/CreateExternalBankTransferDto.md)
-- [CreateExternalStablecoinTransferDto](docs/CreateExternalStablecoinTransferDto.md)
-- [CreateInvoiceDto](docs/CreateInvoiceDto.md)
-- [CreateLiquidationAddressDto](docs/CreateLiquidationAddressDto.md)
-- [CreatePaymentLinkDto](docs/CreatePaymentLinkDto.md)
-- [CreateStablePaymentIntentDto](docs/CreateStablePaymentIntentDto.md)
-- [CreateStablecoinConversionDto](docs/CreateStablecoinConversionDto.md)
-- [CreateTaxDto](docs/CreateTaxDto.md)
-- [CreateWebhookDto](docs/CreateWebhookDto.md)
-- [CustomerStatus](docs/CustomerStatus.md)
-- [CustomerType](docs/CustomerType.md)
-- [DestinationCurrency](docs/DestinationCurrency.md)
-- [ExchangeRateResponseDto](docs/ExchangeRateResponseDto.md)
-- [FiatCurrency](docs/FiatCurrency.md)
-- [HealthResponseDto](docs/HealthResponseDto.md)
-- [InvoiceProductDto](docs/InvoiceProductDto.md)
-- [LiquidationAddressResponseDto](docs/LiquidationAddressResponseDto.md)
-- [PaymentLinkProductDto](docs/PaymentLinkProductDto.md)
-- [PaymentRequestDto](docs/PaymentRequestDto.md)
-- [PaymentResponseDto](docs/PaymentResponseDto.md)
-- [PublicHealthResponseDto](docs/PublicHealthResponseDto.md)
-- [RefundResponseDto](docs/RefundResponseDto.md)
-- [StableCoinCurrency](docs/StableCoinCurrency.md)
-- [TaxControllerCreate201Response](docs/TaxControllerCreate201Response.md)
-- [TaxControllerDeleteWithoutId400Response](docs/TaxControllerDeleteWithoutId400Response.md)
-- [TaxControllerUpdateWithoutId400Response](docs/TaxControllerUpdateWithoutId400Response.md)
-- [UpdateCustomerDto](docs/UpdateCustomerDto.md)
-- [UpdateTaxDto](docs/UpdateTaxDto.md)
-- [UpdateWebhookDto](docs/UpdateWebhookDto.md)
-- [WebhookResponseDto](docs/WebhookResponseDto.md)
-
-### Authorization
-
-
-Authentication schemes defined for the API:
-<a id="x-client-key"></a>
-#### x-client-key
-
-
-- **Type**: API key
-- **API key parameter name**: `x-client-key`
-- **Location**: HTTP header
-<a id="x-client-secret"></a>
-#### x-client-secret
-
-
-- **Type**: API key
-- **API key parameter name**: `x-client-secret`
-- **Location**: HTTP header
-<a id="idempotency-key"></a>
-#### idempotency-key
-
-
-- **Type**: API key
-- **API key parameter name**: `idempotency-key`
-- **Location**: HTTP header
-
-## About
-
-This TypeScript SDK client supports the [Fetch API](https://fetch.spec.whatwg.org/)
-and is automatically generated by the
-[OpenAPI Generator](https://openapi-generator.tech) project:
-
-- API version: `1.0.0`
-- Package version: `1.0.0`
-- Generator version: `7.17.0`
-- Build package: `org.openapitools.codegen.languages.TypeScriptFetchClientCodegen`
-
-The generated npm module supports the following:
-
-- Environments
-  * Node.js
-  * Webpack
-  * Browserify
-- Language levels
-  * ES5 - you must have a Promises/A+ library installed
-  * ES6
-- Module systems
-  * CommonJS
-  * ES6 module system
-
-
-## Development
-
-### Building
-
-To build the TypeScript source code, you need to have Node.js and npm installed.
-After cloning the repository, navigate to the project directory and run:
-
-```bash
-npm install
-npm run build
+// Or, configure per-request:
+await client.v0.health.check({
+  maxRetries: 5,
+});
 ```
 
-### Publishing
+### Timeouts
 
-Once you've built the package, you can publish it to npm:
+Requests time out after 1 minute by default. You can configure this with a `timeout` option:
 
-```bash
-npm publish
+<!-- prettier-ignore -->
+```ts
+// Configure the default for all requests:
+const client = new Devdraft({
+  timeout: 20 * 1000, // 20 seconds (default is 1 minute)
+});
+
+// Override per-request:
+await client.v0.health.check({
+  timeout: 5 * 1000,
+});
 ```
 
-## License
+On timeout, an `APIConnectionTimeoutError` is thrown.
 
-[]()
+Note that requests which time out will be [retried twice by default](#retries).
+
+## Advanced Usage
+
+### Accessing raw Response data (e.g., headers)
+
+The "raw" `Response` returned by `fetch()` can be accessed through the `.asResponse()` method on the `APIPromise` type that all methods return.
+This method returns as soon as the headers for a successful response are received and does not consume the response body, so you are free to write custom parsing or streaming logic.
+
+You can also use the `.withResponse()` method to get the raw `Response` along with the parsed data.
+Unlike `.asResponse()` this method consumes the body, returning once it is parsed.
+
+<!-- prettier-ignore -->
+```ts
+const client = new Devdraft();
+
+const response = await client.v0.health.check().asResponse();
+console.log(response.headers.get('X-My-Header'));
+console.log(response.statusText); // access the underlying Response object
+
+const { data: response, response: raw } = await client.v0.health.check().withResponse();
+console.log(raw.headers.get('X-My-Header'));
+console.log(response.authenticated);
+```
+
+### Logging
+
+> [!IMPORTANT]
+> All log messages are intended for debugging only. The format and content of log messages
+> may change between releases.
+
+#### Log levels
+
+The log level can be configured in two ways:
+
+1. Via the `DEVDRAFT_LOG` environment variable
+2. Using the `logLevel` client option (overrides the environment variable if set)
+
+```ts
+import Devdraft from 'devdraft';
+
+const client = new Devdraft({
+  logLevel: 'debug', // Show all log messages
+});
+```
+
+Available log levels, from most to least verbose:
+
+- `'debug'` - Show debug messages, info, warnings, and errors
+- `'info'` - Show info messages, warnings, and errors
+- `'warn'` - Show warnings and errors (default)
+- `'error'` - Show only errors
+- `'off'` - Disable all logging
+
+At the `'debug'` level, all HTTP requests and responses are logged, including headers and bodies.
+Some authentication-related headers are redacted, but sensitive data in request and response bodies
+may still be visible.
+
+#### Custom logger
+
+By default, this library logs to `globalThis.console`. You can also provide a custom logger.
+Most logging libraries are supported, including [pino](https://www.npmjs.com/package/pino), [winston](https://www.npmjs.com/package/winston), [bunyan](https://www.npmjs.com/package/bunyan), [consola](https://www.npmjs.com/package/consola), [signale](https://www.npmjs.com/package/signale), and [@std/log](https://jsr.io/@std/log). If your logger doesn't work, please open an issue.
+
+When providing a custom logger, the `logLevel` option still controls which messages are emitted, messages
+below the configured level will not be sent to your logger.
+
+```ts
+import Devdraft from 'devdraft';
+import pino from 'pino';
+
+const logger = pino();
+
+const client = new Devdraft({
+  logger: logger.child({ name: 'Devdraft' }),
+  logLevel: 'debug', // Send all messages to pino, allowing it to filter
+});
+```
+
+### Making custom/undocumented requests
+
+This library is typed for convenient access to the documented API. If you need to access undocumented
+endpoints, params, or response properties, the library can still be used.
+
+#### Undocumented endpoints
+
+To make requests to undocumented endpoints, you can use `client.get`, `client.post`, and other HTTP verbs.
+Options on the client, such as retries, will be respected when making these requests.
+
+```ts
+await client.post('/some/path', {
+  body: { some_prop: 'foo' },
+  query: { some_query_arg: 'bar' },
+});
+```
+
+#### Undocumented request params
+
+To make requests using undocumented parameters, you may use `// @ts-expect-error` on the undocumented
+parameter. This library doesn't validate at runtime that the request matches the type, so any extra values you
+send will be sent as-is.
+
+```ts
+client.v0.health.check({
+  // ...
+  // @ts-expect-error baz is not yet public
+  baz: 'undocumented option',
+});
+```
+
+For requests with the `GET` verb, any extra params will be in the query, all other requests will send the
+extra param in the body.
+
+If you want to explicitly send an extra argument, you can do so with the `query`, `body`, and `headers` request
+options.
+
+#### Undocumented response properties
+
+To access undocumented response properties, you may access the response object with `// @ts-expect-error` on
+the response object, or cast the response object to the requisite type. Like the request params, we do not
+validate or strip extra properties from the response from the API.
+
+### Customizing the fetch client
+
+By default, this library expects a global `fetch` function is defined.
+
+If you want to use a different `fetch` function, you can either polyfill the global:
+
+```ts
+import fetch from 'my-fetch';
+
+globalThis.fetch = fetch;
+```
+
+Or pass it to the client:
+
+```ts
+import Devdraft from 'devdraft';
+import fetch from 'my-fetch';
+
+const client = new Devdraft({ fetch });
+```
+
+### Fetch options
+
+If you want to set custom `fetch` options without overriding the `fetch` function, you can provide a `fetchOptions` object when instantiating the client or making a request. (Request-specific options override client options.)
+
+```ts
+import Devdraft from 'devdraft';
+
+const client = new Devdraft({
+  fetchOptions: {
+    // `RequestInit` options
+  },
+});
+```
+
+#### Configuring proxies
+
+To modify proxy behavior, you can provide custom `fetchOptions` that add runtime-specific proxy
+options to requests:
+
+<img src="https://raw.githubusercontent.com/stainless-api/sdk-assets/refs/heads/main/node.svg" align="top" width="18" height="21"> **Node** <sup>[[docs](https://github.com/nodejs/undici/blob/main/docs/docs/api/ProxyAgent.md#example---proxyagent-with-fetch)]</sup>
+
+```ts
+import Devdraft from 'devdraft';
+import * as undici from 'undici';
+
+const proxyAgent = new undici.ProxyAgent('http://localhost:8888');
+const client = new Devdraft({
+  fetchOptions: {
+    dispatcher: proxyAgent,
+  },
+});
+```
+
+<img src="https://raw.githubusercontent.com/stainless-api/sdk-assets/refs/heads/main/bun.svg" align="top" width="18" height="21"> **Bun** <sup>[[docs](https://bun.sh/guides/http/proxy)]</sup>
+
+```ts
+import Devdraft from 'devdraft';
+
+const client = new Devdraft({
+  fetchOptions: {
+    proxy: 'http://localhost:8888',
+  },
+});
+```
+
+<img src="https://raw.githubusercontent.com/stainless-api/sdk-assets/refs/heads/main/deno.svg" align="top" width="18" height="21"> **Deno** <sup>[[docs](https://docs.deno.com/api/deno/~/Deno.createHttpClient)]</sup>
+
+```ts
+import Devdraft from 'npm:devdraft';
+
+const httpClient = Deno.createHttpClient({ proxy: { url: 'http://localhost:8888' } });
+const client = new Devdraft({
+  fetchOptions: {
+    client: httpClient,
+  },
+});
+```
+
+## Frequently Asked Questions
+
+## Semantic versioning
+
+This package generally follows [SemVer](https://semver.org/spec/v2.0.0.html) conventions, though certain backwards-incompatible changes may be released as minor versions:
+
+1. Changes that only affect static types, without breaking runtime behavior.
+2. Changes to library internals which are technically public but not intended or documented for external use. _(Please open a GitHub issue to let us know if you are relying on such internals.)_
+3. Changes that we do not expect to impact the vast majority of users in practice.
+
+We take backwards-compatibility seriously and work hard to ensure you can rely on a smooth upgrade experience.
+
+We are keen for your feedback; please open an [issue](https://www.github.com/devdraftengineer/typescript/issues) with questions, bugs, or suggestions.
+
+## Requirements
+
+TypeScript >= 4.9 is supported.
+
+The following runtimes are supported:
+
+- Web browsers (Up-to-date Chrome, Firefox, Safari, Edge, and more)
+- Node.js 20 LTS or later ([non-EOL](https://endoflife.date/nodejs)) versions.
+- Deno v1.28.0 or higher.
+- Bun 1.0 or later.
+- Cloudflare Workers.
+- Vercel Edge Runtime.
+- Jest 28 or greater with the `"node"` environment (`"jsdom"` is not supported at this time).
+- Nitro v2.6 or greater.
+
+Note that React Native is not supported at this time.
+
+If you are interested in other runtime environments, please open or upvote an issue on GitHub.
+
+## Contributing
+
+See [the contributing documentation](./CONTRIBUTING.md).
